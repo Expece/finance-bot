@@ -41,7 +41,7 @@ def get_month_statistics() -> str:
         all_cash += expense.cash
 
     return (f"Расходы за месяц:\n\n"
-            f"Всего - ₽{all_cash}")
+            f"Всего - {all_cash}₽")
 
 
 def get_today_statistics() -> str:
@@ -52,8 +52,9 @@ def get_today_statistics() -> str:
     for expense in today_expenses:
         all_cash += expense.cash
 
-    return (f"Расходы сегодня:\n\n"
-            f"Всего - ₽{all_cash}")
+    return (f"Расходы сегодня:\n\n" +
+            ("\n ".join([str(e.cash) + '₽' + ' ' + e.category for e in today_expenses])) +
+            f"\nВсего - {all_cash}₽")
 
 
 def last() -> List[Expense]:
@@ -68,7 +69,7 @@ def del_last_expense() -> str:
         last_expense = sorted(db.expenses.keys())[-1]
         values = db.expenses.get(last_expense)
         db.expenses.pop(last_expense)
-        return f"Удалил - {values[0]} {values[1]}"
+        return emojize(f"Удалил - {values[0]}₽ {values[1]}")
     return "Расходы еще не заведены"
 
 

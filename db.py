@@ -23,7 +23,9 @@ emojis = {
     'такси': ':taxi:',
     'прочее': ':money_bag:',
     'eyebrow': ':face_with_raised_eyebrow:',
-    'angry': ':face_with_symbols_on_mouth:'
+    'angry': ':face_with_symbols_on_mouth:',
+    'star': ':star:',
+    'dollar': ':dollar_banknote:'
 }
 
 

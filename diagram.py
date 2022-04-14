@@ -13,8 +13,8 @@ def save_diagram():
     categories_labels = [key for key in diagram_values.keys()]
 
     fig, ax = plt.subplots()
-    ax.pie(categories_cash, labels=categories_labels)
-    plt.savefig('diagram.png', transparent=True)
+    ax.pie(categories_cash, labels=categories_labels, autopct='%1.1f%%', textprops={'color': 'white'})
+    plt.savefig('diagram.png', facecolor='black')
     if categories_labels:
         return 'diagram.png'
     return None
@@ -44,4 +44,3 @@ def _get_diagram_values() -> Dict:
             result[expense.category] = expense.cash
         category = expense.category
     return result
-
