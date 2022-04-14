@@ -1,6 +1,11 @@
 import logging
 from aiogram import Bot, Dispatcher, executor, types
+from aiogram.types.message import ContentType
+from aiogram.utils.markdown import text, code
+from aiogram.types import ParseMode
+from emoji import emojize
 
+import emoji_functions as ef
 import exceptions
 import expenses
 import diagram
@@ -78,7 +83,8 @@ async def show_categories(message: types.Message):
     """Выводит категории трат"""
     categories = Categories().get_all_categories()
     answer_message = "Категории трат:\n\n--" + \
-        ("\n-- ".join([c.name + ' (' + ', '.join(c.aliases) + ')' for c in categories]))
+        ("\n-- ".join([emojize(ef.get_emoji_by_key(c.name)) + ' ' + c.name
+                      + ' (' + ', '.join(c.aliases) + ')' for c in categories]))
     await message.answer(answer_message)
 
 
@@ -94,6 +100,15 @@ async def add_expense(message: types.Message):
         f"Добавил траты: {expense.cash} руб. на {expense.category}"
     )
     await message.answer(answer_message)
+
+
+@dp.message_handler(content_types=ContentType.ANY)
+async def unknown_message(msg: types.Message):
+    """Отвечает на разные типы сообщений"""
+    message_text = text(emojize(f'Я не знаю, что с этим делать {ef.get_emoji_by_key("angry")} '
+                                '\nЯ просто напомню что есть'),
+                        code('КОМАНДА'), '/help')
+    await msg.reply(message_text, parse_mode=ParseMode.MARKDOWN)
 
 
 if __name__ == '__main__':

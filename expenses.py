@@ -1,10 +1,12 @@
 import re
 import datetime
 from typing import NamedTuple, List
+from emoji import emojize
 
 import db
 from exceptions import UncorrectMessage
 from categories import Categories
+import emoji_functions as ef
 
 
 class Message(NamedTuple):
@@ -55,7 +57,7 @@ def get_today_statistics() -> str:
 
 
 def last() -> List[Expense]:
-    last_expenses = [Expense(ex_id=key, cash=values[0], category=values[1]) \
+    last_expenses = [Expense(ex_id=key, cash=values[0], category=values[1])
                      for key, values in db.expenses.items() if key <= 3]
     return last_expenses
 
@@ -98,7 +100,8 @@ def _parse_message(raw_message: str) -> Message:
     regex_result = re.match(r"([\d ]+) (.*)", raw_message)
     if not regex_result or not regex_result.group(0) or not regex_result.group(1) \
             or not regex_result.group(2):
-        raise UncorrectMessage("Не понял")
+        my_answer = emojize(f'Не понял {ef.get_emoji_by_key("eyebrow")}')
+        raise UncorrectMessage(my_answer)
 
     cash = int(regex_result.group(1))
     category = regex_result.group(2).strip().lower()

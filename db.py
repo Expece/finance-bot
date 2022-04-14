@@ -11,6 +11,22 @@ categories_and_aliases = {
     'прочее': ['прочее', 'other']
 }
 
+
+emojis = {
+    'продукты': ':green_apple:',
+    'кафе': ':fork_and_knife_with_plate:',
+    'общ. транспорт': ':bus:',
+    'телефон': ':mobile_phone:',
+    'интернет': ':globe_with_meridians:',
+    'подписки': ':check_mark:',
+    'обед': ':pot_of_food:',
+    'такси': ':taxi:',
+    'прочее': ':money_bag:',
+    'eyebrow': ':face_with_raised_eyebrow:',
+    'angry': ':face_with_symbols_on_mouth:'
+}
+
+
 expenses = {}
 
 
