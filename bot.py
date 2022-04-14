@@ -4,13 +4,14 @@ from aiogram import Bot, Dispatcher, executor, types
 import exceptions
 import expenses
 import diagram
+import config
 from categories import Categories
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 # Initialize bot and dispatcher
-bot = Bot(token='5192286424:AAEtJMPoDjB7He1h26no6Xn7P_dUzvM_VwY')
+bot = Bot(token=config.BOT_TOKEN)
 dp = Dispatcher(bot)
 
 
