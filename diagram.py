@@ -13,7 +13,9 @@ def save_diagram():
     categories_labels = [key for key in diagram_values.keys()]
 
     fig, ax = plt.subplots()
-    ax.pie(categories_cash, labels=categories_labels, autopct='%1.1f%%', textprops={'color': 'white'})
+    ax.pie(categories_cash, autopct='%1.1f%%')
+    ax.legend(categories_labels, bbox_to_anchor=(0.92, 0.7), facecolor='w', framealpha=0.8,
+              edgecolor='b', fontsize=12, title='Category', title_fontsize=15)
     plt.savefig('diagram.png', facecolor='black')
     if categories_labels:
         return 'diagram.png'
