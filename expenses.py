@@ -1,7 +1,7 @@
 import re
 import datetime
 from typing import NamedTuple, List
-from emoji import emojize
+from aiogram.utils.emoji import emojize
 
 import db
 from exceptions import UncorrectMessage
@@ -73,6 +73,18 @@ def del_last_expense() -> str:
     return "Расходы еще не заведены"
 
 
+def set_daily_expense(message: str) -> str:
+    """Устанавливается базовый расход в день"""
+    parse_message = _parse_message(message, 1)
+    db.daily_expense = int(parse_message.cash)
+    answer_message = f"Усановил, дневной расход -- {db.daily_expense}. "
+    if db.daily_expense >= 500:
+        return answer_message + emojize(f'Немало {ef.get_emoji_by_key("moon")}')
+    elif db.daily_expense <= 100:
+        return answer_message + emojize(f'Удачи {ef.get_emoji_by_key("ramen")}')
+    return answer_message
+
+
 def _find_expenses_by_time(date: str) -> List[Expense]:
     expenses = []
     time = _get_formated_now()
@@ -97,13 +109,23 @@ def _get_formated_now() -> str:
     return now.strftime("%d-%m-%Y")
 
 
-def _parse_message(raw_message: str) -> Message:
-    regex_result = re.match(r"([\d ]+) (.*)", raw_message)
+def _parse_message(raw_message: str, type_message=0) -> Message:
+    regex_result = _regular_result(raw_message, type_message)
     if not regex_result or not regex_result.group(0) or not regex_result.group(1) \
             or not regex_result.group(2):
         my_answer = emojize(f'Не понял {ef.get_emoji_by_key("eyebrow")}')
         raise UncorrectMessage(my_answer)
-
+    if type_message:
+        cash = regex_result.group(2)
+        category = regex_result.group(1)
+        return Message(cash=cash, category=category)
     cash = int(regex_result.group(1))
     category = regex_result.group(2).strip().lower()
     return Message(cash=cash, category=category)
+
+
+def _regular_result(raw_message: str, type_message):
+    regex_result = re.match(r"([\d ]+) (.*)", raw_message)
+    if type_message:
+        regex_result = re.search(r"(/daily) (\d+$)", raw_message)
+    return regex_result

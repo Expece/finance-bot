@@ -27,23 +27,24 @@ async def send_welcome(message: types.Message):
                "Сегодняшняя статистика: /today\n"
                "За текущий месяц: /month\n"
                "Последние внесённые расходы: /last\n"
-               "Удалить последний расход: /del\n"
                "Диаграмма расходов: /diagram\n"
-               "Категории трат: /categories")), parse_mode=types.ParseMode.MARKDOWN)
+               "Установить расход в день: /daily\n"
+               "Категории трат: /categories\n"
+               "Удалить последний расход: /del")), parse_mode=types.ParseMode.MARKDOWN)
 
 
 @dp.message_handler(commands=['today'])
 async def show_today_expenses(message: types.Message):
     """Выводит внесенные расходы за день"""
     answer_message = expenses.get_today_statistics()
-    await message.reply(answer_message)
+    await message.answer(answer_message)
 
 
 @dp.message_handler(commands=['month'])
 async def show_month_expenses(message: types.Message):
     """Выводит внесенные расходы за месяц"""
     answer_message = expenses.get_month_statistics()
-    await message.reply(answer_message)
+    await message.answer(answer_message)
 
 
 @dp.message_handler(commands=['last'])
@@ -51,19 +52,23 @@ async def show_last_expenses(message: types.Message):
     """Выводит последние внесенные расходы"""
     last_expenses = expenses.last()
     if not last_expenses:
-        await message.reply("Расходы еще не заведены", parse_mode=types.ParseMode.MARKDOWN)
+        await message.answer("Расходы еще не заведены")
         return
     answer_message = "Последние траты:\n\n" + \
                      ("\n ".join([str(e.cash) + '₽' + ' ' + e.category
                                   for e in last_expenses]))
-    await message.reply(answer_message)
+    await message.answer(answer_message)
 
 
-@dp.message_handler(commands=['del'])
-async def del_expense(message: types.Message):
-    """Удаляет последний расход"""
-    answer_message = expenses.del_last_expense()
-    await message.reply(answer_message)
+@dp.message_handler(commands=['daily'])
+async def daily_expense(message: types.Message):
+    """Устанавливает базовый расход в день и выводит сообщение"""
+    try:
+        answer_message = expenses.set_daily_expense(message.text)
+    except exceptions.UncorrectMessage as e:
+        await message.reply(f'{str(e)},Напиши целое положительное число')
+        return
+    await message.answer(answer_message, parse_mode=types.ParseMode.MARKDOWN)
 
 
 @dp.message_handler(commands=['diagram'])
@@ -73,7 +78,7 @@ async def show_diagram(message: types.Message):
     if diagram_name:
         await bot.send_photo(chat_id=message.chat.id, photo=open(diagram_name, 'rb'))
     else:
-        await message.reply("Расходы еще не заведены")
+        await message.answer("Расходы еще не заведены")
     diagram.delete_diagram()
 
 
@@ -87,16 +92,23 @@ async def show_categories(message: types.Message):
     await message.answer(answer_message)
 
 
+@dp.message_handler(commands=['del'])
+async def del_expense(message: types.Message):
+    """Удаляет последний расход"""
+    answer_message = expenses.del_last_expense()
+    await message.answer(answer_message)
+
+
 @dp.message_handler()
 async def add_expense(message: types.Message):
     """Добавляет расход"""
     try:
         expense = expenses.add_expense(message.text)
     except exceptions.UncorrectMessage as e:
-        await message.answer(str(e))
+        await message.reply(str(e))
         return
     answer_message = f"Добавил траты: {expense.cash}₽ на {expense.category}"
-    await message.reply(answer_message)
+    await message.answer(answer_message)
 
 
 @dp.message_handler(content_types=types.message.ContentType.ANY)
