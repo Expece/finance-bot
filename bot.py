@@ -1,13 +1,12 @@
 import logging
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.utils.markdown import text, italic
-from emoji import emojize
+from aiogram.utils.emoji import emojize
 
-import emoji_functions as ef
 import exceptions
 import expenses
 import diagram
-from categories import Categories
+from categories import Categories, get_category_emoji
 from config import BOT_TOKEN
 
 # Configure logging
@@ -22,13 +21,13 @@ dp = Dispatcher(bot)
 async def send_welcome(message: types.Message):
     """This handler will be called when user sends `/start` or `/help` command"""
     await message.answer(text(
-        emojize(f"Бот для учёта финансов {ef.get_emoji_by_key('star')}\n\n"),
+        emojize(f"Бот для учёта финансов :star:\n\n"),
         italic("Добавить расход: 999 продукты\n"
                "Сегодняшняя статистика: /today\n"
                "За текущий месяц: /month\n"
                "Последние внесённые расходы: /last\n"
                "Диаграмма расходов: /diagram\n"
-               "Установить расход в день: /daily\n"
+               "Установить расход в день: /daily cash\n"
                "Категории трат: /categories\n"
                "Удалить последний расход: /del")), parse_mode=types.ParseMode.MARKDOWN)
 
@@ -55,8 +54,8 @@ async def show_last_expenses(message: types.Message):
         await message.answer("Расходы еще не заведены")
         return
     answer_message = "Последние траты:\n\n" + \
-                     ("\n ".join([str(e.cash) + '₽' + ' ' + e.category
-                                  for e in last_expenses]))
+                     ("\n".join([str(e.cash) + '₽' + ' ' + e.category
+                                 for e in last_expenses]))
     await message.answer(answer_message)
 
 
@@ -66,7 +65,7 @@ async def daily_expense(message: types.Message):
     try:
         answer_message = expenses.set_daily_expense(message.text)
     except exceptions.UncorrectMessage as e:
-        await message.reply(f'{str(e)},Напиши целое положительное число')
+        await message.reply(f'{str(e)}, напиши типо: /daily 500')
         return
     await message.answer(answer_message, parse_mode=types.ParseMode.MARKDOWN)
 
@@ -87,7 +86,7 @@ async def show_categories(message: types.Message):
     """Выводит категории трат"""
     categories = Categories().get_all_categories()
     answer_message = "Категории трат:\n\n-- " + \
-        ("\n-- ".join([emojize(ef.get_emoji_by_key(c.name)) + ' ' + c.name
+        ("\n-- ".join([emojize(get_category_emoji(c.name)) + ' ' + c.name
                        for c in categories]))
     await message.answer(answer_message)
 
@@ -105,16 +104,17 @@ async def add_expense(message: types.Message):
     try:
         expense = expenses.add_expense(message.text)
     except exceptions.UncorrectMessage as e:
-        await message.reply(str(e))
+        await message.reply(str(e)+', напиши типо: 100 такси')
         return
-    answer_message = f"Добавил траты: {expense.cash}₽ на {expense.category}"
-    await message.answer(answer_message)
+    answer_message = emojize(f"Добавил траты: {expense.cash}₽ на {expense.category}:white_check_mark:\n") +\
+        expenses.calculate_avalible_expenses()
+    await message.answer(answer_message, parse_mode=types.ParseMode.MARKDOWN)
 
 
 @dp.message_handler(content_types=types.message.ContentType.ANY)
 async def unknown_message(msg: types.Message):
     """Отвечает на разные типы сообщений"""
-    message_text = emojize(f'Я не знаю, что с этим делать {ef.get_emoji_by_key("angry")},\n'
+    message_text = emojize(f'Я не знаю, что с этим делать :face_with_symbols_on_mouth:,\n'
                            f'Я просто напомню что есть /help')
     await msg.reply(message_text)
 

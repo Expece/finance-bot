@@ -1,5 +1,5 @@
 from typing import NamedTuple, List
-from db import categories_and_aliases
+from db import categories_and_aliases, category_emojis
 
 
 class Category(NamedTuple):
@@ -33,3 +33,8 @@ class Categories:
                     if category_name in alias:
                         return category
         return other_category
+
+
+def get_category_emoji(category_text: str) -> str:
+    emoji = category_emojis.get(category_text)
+    return emoji

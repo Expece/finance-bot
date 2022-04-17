@@ -11,8 +11,8 @@ categories_and_aliases = {
     'прочее': ['прочее', 'other']
 }
 
-# Словарь эмоджи
-emojis = {
+# Словарь эмоджи для категорий
+category_emojis = {
     'продукты': ':green_apple:',
     'кафе': ':fork_and_knife_with_plate:',
     'общ. транспорт': ':bus:',
@@ -22,19 +22,13 @@ emojis = {
     'обед': ':pot_of_food:',
     'такси': ':taxi:',
     'прочее': ':money_bag:',
-    'eyebrow': ':face_with_raised_eyebrow:',
-    'angry': ':face_with_symbols_on_mouth:',
-    'star': ':star:',
-    'dollar': ':dollar_banknote:',
-    'moon': ':new_moon_with_face:',
-    'ramen': ':ramen:'
 }
 
 # Запись расходов в виде: id: [cash: int,category: str, time: str]
 expenses = {}
 
 # Устанавливается базовый расход в день
-daily_expense: int
+daily_expense = 0
 
 
 def insert_expense(ex_id: int, cash: int, category_name: str, time: str):

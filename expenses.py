@@ -1,12 +1,12 @@
 import re
 import datetime
+from functools import reduce
 from typing import NamedTuple, List
 from aiogram.utils.emoji import emojize
 
 import db
 from exceptions import UncorrectMessage
 from categories import Categories
-import emoji_functions as ef
 
 
 class Message(NamedTuple):
@@ -53,7 +53,7 @@ def get_today_statistics() -> str:
         all_cash += expense.cash
 
     return (f"Расходы сегодня:\n\n" +
-            ("\n ".join([str(e.cash) + '₽' + ' ' + e.category for e in today_expenses])) +
+            ("\n".join([str(e.cash) + '₽' + ' ' + e.category for e in today_expenses])) +
             f"\nВсего - {all_cash}₽")
 
 
@@ -69,7 +69,7 @@ def del_last_expense() -> str:
         last_expense = sorted(db.expenses.keys())[-1]
         values = db.expenses.get(last_expense)
         db.expenses.pop(last_expense)
-        return emojize(f"Удалил - {values[0]}₽ {values[1]}")
+        return f"Удалил - {values[0]}₽ {values[1]}"
     return "Расходы еще не заведены"
 
 
@@ -77,12 +77,29 @@ def set_daily_expense(message: str) -> str:
     """Устанавливается базовый расход в день"""
     parse_message = _parse_message(message, 1)
     db.daily_expense = int(parse_message.cash)
-    answer_message = f"Усановил, дневной расход -- {db.daily_expense}. "
+    answer_message = f"Усановил, дневной расход -- {db.daily_expense}₽. "
     if db.daily_expense >= 500:
-        return answer_message + emojize(f'Немало {ef.get_emoji_by_key("moon")}')
+        return answer_message + emojize(f'Немало :new_moon_with_face:')
     elif db.daily_expense <= 100:
-        return answer_message + emojize(f'Удачи {ef.get_emoji_by_key("ramen")}')
+        return answer_message + emojize(f'Удачи :ramen:')
     return answer_message
+
+
+def calculate_avalible_expenses():
+    if not db.daily_expense:
+        return ''
+    day_expenses = _find_expenses_by_time('day')
+    spent_cash = reduce(lambda x, y: x + y, [expence.cash for expence in day_expenses])
+    avalible_cash = int(db.daily_expense - spent_cash)
+    return _avalible_expenses_message(avalible_cash)
+
+
+def _avalible_expenses_message(avalible_cash: int) -> str:
+    if avalible_cash < 0:
+        return 'Дневной расход превышен'
+    elif avalible_cash == 0:
+        return 'Вы достигли дневного расхода'
+    return f'Вам доступно еще {avalible_cash}₽'
 
 
 def _find_expenses_by_time(date: str) -> List[Expense]:
@@ -113,7 +130,7 @@ def _parse_message(raw_message: str, type_message=0) -> Message:
     regex_result = _regular_result(raw_message, type_message)
     if not regex_result or not regex_result.group(0) or not regex_result.group(1) \
             or not regex_result.group(2):
-        my_answer = emojize(f'Не понял {ef.get_emoji_by_key("eyebrow")}')
+        my_answer = emojize(f'Не понял :face_with_raised_eyebrow:')
         raise UncorrectMessage(my_answer)
     if type_message:
         cash = regex_result.group(2)
