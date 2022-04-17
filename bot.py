@@ -6,6 +6,7 @@ from aiogram.utils.emoji import emojize
 import exceptions
 import expenses
 import diagram
+import keyboards as kb
 from categories import Categories, get_category_emoji
 from config import BOT_TOKEN
 
@@ -39,11 +40,22 @@ async def show_today_expenses(message: types.Message):
     await message.answer(answer_message)
 
 
+@dp.callback_query_handler(text="month_expenses")
+async def send_random_value(call: types.CallbackQuery):
+    await call.message.answer(kb.month_btn_data())
+    await call.answer()
+
+
 @dp.message_handler(commands=['month'])
 async def show_month_expenses(message: types.Message):
     """Выводит внесенные расходы за месяц"""
-    answer_message = expenses.get_month_statistics()
-    await message.answer(answer_message)
+    month_statistics = expenses.get_month_statistics()
+    if not month_statistics:
+        answer_message = "В этом месяце нет расходов"
+        await message.answer(answer_message)
+        return
+    answer_message = f"Расходы за месяц\nВсего: {month_statistics}"
+    await message.answer(answer_message, reply_markup=kb.inline_kb_month)
 
 
 @dp.message_handler(commands=['last'])

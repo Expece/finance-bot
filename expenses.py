@@ -21,6 +21,7 @@ class Expense(NamedTuple):
 
 
 def add_expense(raw_message: str) -> Expense:
+    """Добавляет расход в дб"""
     parsed_message = _parse_message(raw_message)
     category = Categories().get_category(parsed_message.category)
     if db.expenses:
@@ -32,19 +33,17 @@ def add_expense(raw_message: str) -> Expense:
     return Expense(ex_id=ex_id, cash=parsed_message.cash, category=category.name)
 
 
-def get_month_statistics() -> str:
+def get_month_statistics() -> int:
+    """Возвращает статистику за месяц"""
     month_expenses = _find_expenses_by_time('month')
-    if not month_expenses:
-        return "В этом месяце нет расходов"
     all_cash = 0
     for expense in month_expenses:
         all_cash += expense.cash
-
-    return (f"Расходы за месяц:\n\n"
-            f"Всего - {all_cash}₽")
+    return all_cash
 
 
 def get_today_statistics() -> str:
+    """Возвращает статистику за день"""
     today_expenses = _find_expenses_by_time('day')
     if not today_expenses:
         return "Сегодня расходов нет"
@@ -58,6 +57,7 @@ def get_today_statistics() -> str:
 
 
 def last() -> List[Expense]:
+    """Возвращает последние расходы"""
     last_expenses = [Expense(ex_id=key, cash=values[0], category=values[1])
                      for key, values in db.expenses.items() if key <= 3]
     return last_expenses
@@ -86,6 +86,7 @@ def set_daily_expense(message: str) -> str:
 
 
 def calculate_avalible_expenses():
+    """Расчет разрешенных трат"""
     if not db.daily_expense:
         return ''
     day_expenses = _find_expenses_by_time('day')
