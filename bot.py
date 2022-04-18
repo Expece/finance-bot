@@ -40,12 +40,6 @@ async def show_today_expenses(message: types.Message):
     await message.answer(answer_message)
 
 
-@dp.callback_query_handler(text="month_expenses")
-async def send_random_value(call: types.CallbackQuery):
-    await call.message.answer(kb.month_btn_data())
-    await call.answer()
-
-
 @dp.message_handler(commands=['month'])
 async def show_month_expenses(message: types.Message):
     """Выводит внесенные расходы за месяц"""
@@ -87,10 +81,10 @@ async def show_diagram(message: types.Message):
     """Рисует диаграмму расходов"""
     diagram_name = diagram.save_diagram()
     if diagram_name:
-        await bot.send_photo(chat_id=message.chat.id, photo=open(diagram_name, 'rb'))
+        reply_markup = kb.get_diagram_keyboard(message.chat.id)
+        await message.answer("Diagram", reply_markup=reply_markup)
     else:
         await message.answer("Расходы еще не заведены")
-    diagram.delete_diagram()
 
 
 @dp.message_handler(commands=['categories'])
@@ -129,6 +123,32 @@ async def unknown_message(msg: types.Message):
     message_text = emojize(f'Я не знаю, что с этим делать :face_with_symbols_on_mouth:,\n'
                            f'Я просто напомню что есть /help')
     await msg.reply(message_text)
+
+
+@dp.callback_query_handler(text="month_expenses")
+async def send_month_expenses(call: types.CallbackQuery):
+    await call.message.answer(kb.month_btn_data())
+    await call.answer()
+
+
+@dp.callback_query_handler(kb.callback_data_diagram.filter(filter='diagram_month'))
+async def send_diagram_month(call: types.CallbackQuery, callback_data: dict):
+    chat_id = callback_data['chat_id']
+    diagram_name = diagram.save_diagram('month')
+    await bot.send_photo(chat_id=chat_id, photo=open(diagram_name, 'rb'),
+                         caption='Диаграмма за месяц')
+    await call.answer()
+    diagram.delete_diagram()
+
+
+@dp.callback_query_handler(kb.callback_data_diagram.filter(filter='diagram_year'))
+async def send_diagram_year(call: types.CallbackQuery, callback_data: dict):
+    chat_id = callback_data['chat_id']
+    diagram_name = diagram.save_diagram('year')
+    await bot.send_photo(chat_id=chat_id, photo=open(diagram_name, 'rb'),
+                         caption='Диаграмма за год')
+    await call.answer()
+    diagram.delete_diagram()
 
 
 if __name__ == '__main__':

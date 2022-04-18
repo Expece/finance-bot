@@ -35,7 +35,7 @@ def add_expense(raw_message: str) -> Expense:
 
 def get_month_statistics() -> int:
     """Возвращает статистику за месяц"""
-    month_expenses = _find_expenses_by_time('month')
+    month_expenses = find_expenses_by_time('month')
     all_cash = 0
     for expense in month_expenses:
         all_cash += expense.cash
@@ -44,7 +44,7 @@ def get_month_statistics() -> int:
 
 def get_today_statistics() -> str:
     """Возвращает статистику за день"""
-    today_expenses = _find_expenses_by_time('day')
+    today_expenses = find_expenses_by_time('day')
     if not today_expenses:
         return "Сегодня расходов нет"
     all_cash = 0
@@ -89,7 +89,7 @@ def calculate_avalible_expenses():
     """Расчет разрешенных трат"""
     if not db.daily_expense:
         return ''
-    day_expenses = _find_expenses_by_time('day')
+    day_expenses = find_expenses_by_time('day')
     spent_cash = reduce(lambda x, y: x + y, [expence.cash for expence in day_expenses])
     avalible_cash = int(db.daily_expense - spent_cash)
     return _avalible_expenses_message(avalible_cash)
@@ -103,7 +103,7 @@ def _avalible_expenses_message(avalible_cash: int) -> str:
     return f'Вам доступно еще {avalible_cash}₽'
 
 
-def _find_expenses_by_time(date: str) -> List[Expense]:
+def find_expenses_by_time(date: str) -> List[Expense]:
     expenses = []
     time = _get_formated_now()
     for ex_id, values in db.expenses.items():

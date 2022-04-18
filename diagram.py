@@ -4,11 +4,13 @@ from os import remove
 
 from db import expenses
 from categories import Categories
-from expenses import Expense
+from expenses import Expense, find_expenses_by_time
 
 
-def save_diagram():
+def save_diagram(date='year'):
     diagram_values = _get_diagram_values()
+    if date == 'month':
+        diagram_values = _get_diagram_values(date)
     categories_cash = [value for value in diagram_values.values()]
     categories_labels = [key for key in diagram_values.keys()]
 
@@ -34,8 +36,10 @@ def _parse_expenses() -> List[Expense]:
     return result
 
 
-def _get_diagram_values() -> Dict:
+def _get_diagram_values(date='year') -> Dict:
     parsed_expenses = _parse_expenses()
+    if date == 'month':
+        parsed_expenses = find_expenses_by_time(date)
     result = {}
     category = None
     for expense in parsed_expenses:
