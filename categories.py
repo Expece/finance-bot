@@ -1,10 +1,11 @@
-from typing import NamedTuple, List
-from db import categories_and_aliases, category_emojis
+from typing import NamedTuple, List, Dict
+import db
 
 
 class Category(NamedTuple):
     """Структура категории"""
     name: str
+    emoji: str
     aliases: List[str]
 
 
@@ -14,10 +15,26 @@ class Categories:
 
     def _load_categories(self) -> List[Category]:
         """Возвращает справочник категорий расходов"""
-        categories = []
-        for category_name in categories_and_aliases:
-            categories.append(Category(name=category_name, aliases=categories_and_aliases.get(category_name)))
+        categories = db.fetchall(
+            "category", "name emoji aliases".split()
+        )
+        categories = self._fill_aliases(categories)
         return categories
+
+    def _fill_aliases(self, categories: List[Dict]) -> List[Category]:
+        """Заполняет по каждой категории aliases, то есть возможные
+                                            названия этой категории"""
+        categories_result = []
+        for index, category in enumerate(categories):
+            aliases = category["aliases"].split(",")
+            aliases = list(filter(None, map(str.strip, aliases)))
+            aliases.append(category["name"])
+            categories_result.append(Category(
+                name=category['name'],
+                emoji=category['emoji'],
+                aliases=aliases
+            ))
+        return categories_result
 
     def get_all_categories(self) -> List[Category]:
         """Возвращает справочник категорий"""
@@ -33,8 +50,3 @@ class Categories:
                     if category_name in alias:
                         return category
         return other_category
-
-
-def get_category_emoji(category_text: str) -> str:
-    emoji = category_emojis.get(category_text)
-    return emoji

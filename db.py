@@ -1,36 +1,62 @@
-# Словарь категорий и псевдонимов
-categories_and_aliases = {
-    'продукты': ['еда', 'продукты', 'products'],
-    'кафе': ['кафе', 'рест ', 'ресторан', 'мак', 'макдональдс', 'kfc'],
-    'общ. транспорт': ['автобус', 'метро', 'transport', 'общ. транспорт'],
-    'телефон': ['телефон', 'связь', 'phone'],
-    'интернет': ['инет', 'inet', 'интернет', 'internet'],
-    'подписки': ['подписки', 'spotify', 'споти', 'подписки'],
-    'обед': ['обед', 'столовая', 'dinner'],
-    'такси': ['такси', 'такса', 'тэха', 'taxi'],
-    'прочее': ['прочее', 'other']
-}
+import os
+import sqlite3
+from typing import Dict, List
 
-# Словарь эмоджи для категорий
-category_emojis = {
-    'продукты': ':green_apple:',
-    'кафе': ':fork_and_knife_with_plate:',
-    'общ. транспорт': ':bus:',
-    'телефон': ':mobile_phone:',
-    'интернет': ':globe_with_meridians:',
-    'подписки': ':check_mark:',
-    'обед': ':pot_of_food:',
-    'такси': ':taxi:',
-    'прочее': ':money_bag:',
-}
-
-# Запись расходов в виде: id: [cash: int,category: str, time: str]
-expenses = {}
-
-# Устанавливается базовый расход в день
-daily_expense = 0
+conn = sqlite3.connect(os.path.join("db", "finance.db"))
+cursor = conn.cursor()
 
 
-def insert_expense(ex_id: int, cash: int, category_name: str, time: str):
-    """Добавить расход в expenses"""
-    expenses[ex_id] = [cash, category_name, time]
+def insert(table: str, column_values: Dict):
+    columns = ' ,'.join(column_values.keys())
+    values = [tuple(column_values.values())]
+    placeholders = ", ".join("?" * len(column_values.keys()))
+    cursor.executemany(
+        f"INSERT INTO {table} "
+        f"({columns}) "
+        f"VALUES ({placeholders})",
+        values
+    )
+
+
+def fetchall(table: str, columns: List[str], where='') -> List[Dict]:
+    columns_joined = ", ".join(columns)
+    cursor.execute(f"SELECT {columns_joined} FROM {table} " + where)
+    rows = cursor.fetchall()
+    result = []
+    for row in rows:
+        dict_row = {}
+        for index, column in enumerate(columns):
+            dict_row[column] = row[index]
+        result.append(dict_row)
+    return result
+
+
+def delete(table: str, row_id: int) -> None:
+    row_id = int(row_id)
+    cursor.execute(f"delete from {table} where id={row_id}")
+    conn.commit()
+
+
+def get_cursor():
+    return cursor
+
+
+def _init_db():
+    """Инициализирует БД"""
+    with open("createdb.sql", "r", encoding="utf-8") as f:
+        sql = f.read()
+    cursor.executescript(sql)
+    conn.commit()
+
+
+def check_db_exists():
+    """Проверяет, инициализирована ли БД, если нет — инициализирует"""
+    cursor.execute("SELECT name FROM sqlite_master "
+                   "WHERE type='table' AND name='expense'")
+    table_exists = cursor.fetchall()
+    if table_exists:
+        return
+    _init_db()
+
+
+check_db_exists()

@@ -1,10 +1,9 @@
-from typing import List, Dict
+from typing import Dict
 import matplotlib.pyplot as plt
 from os import remove
+from datetime import datetime
 
-from db import expenses
-from categories import Categories
-from expenses import Expense, find_expenses_by_time
+import db
 
 
 def save_diagram(date='year'):
@@ -28,25 +27,28 @@ def delete_diagram():
     remove('diagram.png')
 
 
-def _parse_expenses() -> List[Expense]:
-    result = []
-    for key, values in expenses.items():
-        category = Categories().get_category(values[1])
-        result.append(Expense(ex_id=key, cash=values[0], category=category.name))
-    return result
-
-
 def _get_diagram_values(date='year') -> Dict:
-    parsed_expenses = _parse_expenses()
     if date == 'month':
-        parsed_expenses = find_expenses_by_time(date)
+        rows = db.fetchall("expense", "cash category".split(),
+                           f"where expense.created like '%{_get_year_and_month()}'")
+    else:
+        rows = db.fetchall("expense", "cash category".split(),
+                           f"where expense.created like '%{_get_year()}'")
     result = {}
-    category = None
-    for expense in parsed_expenses:
-        if expense.category == category or not category:
-            cash = result.get(expense.category, 0) + expense.cash
-            result[expense.category] = cash
-        else:
-            result[expense.category] = expense.cash
-        category = expense.category
+    for row in rows:
+        category = row.get('category', 0)
+        if category in result:
+            result[category] += row['cash']
+            continue
+        result[category] = row['cash']
     return result
+
+
+def _get_year() -> str:
+    time = datetime.now()
+    return time.strftime("%Y")[2:]
+
+
+def _get_year_and_month() -> str:
+    time = datetime.now()
+    return time.strftime("%m-%Y")

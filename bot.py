@@ -7,7 +7,7 @@ import exceptions
 import expenses
 import diagram
 import keyboards as kb
-from categories import Categories, get_category_emoji
+from categories import Categories
 from config import BOT_TOKEN
 
 # Configure logging
@@ -29,14 +29,13 @@ async def send_welcome(message: types.Message):
                "Последние внесённые расходы: /last\n"
                "Диаграмма расходов: /diagram\n"
                "Установить расход в день: /daily cash\n"
-               "Категории трат: /categories\n"
-               "Удалить последний расход: /del")), parse_mode=types.ParseMode.MARKDOWN)
+               "Категории трат: /categories")), parse_mode=types.ParseMode.MARKDOWN)
 
 
 @dp.message_handler(commands=['today'])
 async def show_today_expenses(message: types.Message):
     """Выводит внесенные расходы за день"""
-    answer_message = expenses.get_today_statistics()
+    answer_message = expenses.get_day_statistics()
     await message.answer(answer_message)
 
 
@@ -53,15 +52,18 @@ async def show_month_expenses(message: types.Message):
 
 
 @dp.message_handler(commands=['last'])
-async def show_last_expenses(message: types.Message):
-    """Выводит последние внесенные расходы"""
+async def list_expenses(message: types.Message):
+    """Отправляет последние несколько записей о расходах"""
     last_expenses = expenses.last()
     if not last_expenses:
-        await message.answer("Расходы еще не заведены")
+        await message.answer("Расходы ещё не заведены")
         return
-    answer_message = "Последние траты:\n\n" + \
-                     ("\n".join([str(e.cash) + '₽' + ' ' + e.category
-                                 for e in last_expenses]))
+    last_expenses_rows = [
+        f"{expense.cash} руб. на {expense.category} — нажми "
+        f"/del{expense.ex_id} для удаления"
+        for expense in last_expenses]
+    answer_message = "Последние сохранённые траты:\n\n* " + "\n\n* " \
+        .join(last_expenses_rows)
     await message.answer(answer_message)
 
 
@@ -92,15 +94,21 @@ async def show_categories(message: types.Message):
     """Выводит категории трат"""
     categories = Categories().get_all_categories()
     answer_message = "Категории трат:\n\n-- " + \
-        ("\n-- ".join([emojize(get_category_emoji(c.name)) + ' ' + c.name
+        ("\n-- ".join([emojize(c.emoji) + ' ' + c.name
                        for c in categories]))
     await message.answer(answer_message)
 
 
-@dp.message_handler(commands=['del'])
+@dp.message_handler(lambda message: message.text.startswith('/del'))
 async def del_expense(message: types.Message):
-    """Удаляет последний расход"""
-    answer_message = expenses.del_last_expense()
+    """Удаляет одну запись о расходе по её идентификатору"""
+    try:
+        row_id = int(message.text[4:])
+    except ValueError:
+        await message.reply(emojize('Не понял :face_with_raised_eyebrow:'))
+        return
+    expenses.delete_expense(row_id)
+    answer_message = "Удалил"
     await message.answer(answer_message)
 
 
