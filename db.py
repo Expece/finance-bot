@@ -7,6 +7,7 @@ cursor = conn.cursor()
 
 
 def insert(table: str, column_values: Dict):
+    """Добьавляет данные в бд"""
     columns = ' ,'.join(column_values.keys())
     values = [tuple(column_values.values())]
     placeholders = ", ".join("?" * len(column_values.keys()))
@@ -19,6 +20,7 @@ def insert(table: str, column_values: Dict):
 
 
 def fetchall(table: str, columns: List[str], where='') -> List[Dict]:
+    """Возвращает данные в бд"""
     columns_joined = ", ".join(columns)
     cursor.execute(f"SELECT {columns_joined} FROM {table} " + where)
     rows = cursor.fetchall()
@@ -32,12 +34,14 @@ def fetchall(table: str, columns: List[str], where='') -> List[Dict]:
 
 
 def delete(table: str, row_id: int) -> None:
+    """Удаляет строку из бд"""
     row_id = int(row_id)
     cursor.execute(f"delete from {table} where id={row_id}")
     conn.commit()
 
 
 def get_cursor():
+    """Возвращает курсор"""
     return cursor
 
 

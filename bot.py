@@ -71,7 +71,7 @@ async def list_expenses(message: types.Message):
 async def daily_expense(message: types.Message):
     """Устанавливает базовый расход в день и выводит сообщение"""
     try:
-        answer_message = expenses.set_daily_expense(message.text)
+        answer_message = expenses.set_daily_limit(message.text)
     except exceptions.UncorrectMessage as e:
         await message.reply(f'{str(e)}, напиши типо: /daily 500')
         return
@@ -135,12 +135,14 @@ async def unknown_message(msg: types.Message):
 
 @dp.callback_query_handler(text="month_expenses")
 async def send_month_expenses(call: types.CallbackQuery):
+    """Выводит суммы расходов по дням"""
     await call.message.answer(kb.month_btn_data())
     await call.answer()
 
 
 @dp.callback_query_handler(kb.callback_data_diagram.filter(filter='diagram_month'))
 async def send_diagram_month(call: types.CallbackQuery, callback_data: dict):
+    """Отправляет диаграмму о расходах за месяц"""
     chat_id = callback_data['chat_id']
     diagram_name = diagram.save_diagram('month')
     await bot.send_photo(chat_id=chat_id, photo=open(diagram_name, 'rb'),
@@ -151,6 +153,7 @@ async def send_diagram_month(call: types.CallbackQuery, callback_data: dict):
 
 @dp.callback_query_handler(kb.callback_data_diagram.filter(filter='diagram_year'))
 async def send_diagram_year(call: types.CallbackQuery, callback_data: dict):
+    """Отправляет диаграмму о расходах за год"""
     chat_id = callback_data['chat_id']
     diagram_name = diagram.save_diagram('year')
     await bot.send_photo(chat_id=chat_id, photo=open(diagram_name, 'rb'),

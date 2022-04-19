@@ -3,12 +3,14 @@ import matplotlib.pyplot as plt
 from os import remove
 
 import db
-import general_functions as gf
+import datetime_functions as gf
 
+# Название диаграммы, оно не меняется
 diagram_name = 'diagram.png'
 
 
 def save_diagram(date='year') -> str or None:
+    """Сохраняет диаграмму в png и возвращает ее название"""
     diagram_values = _get_diagram_values()
     if date == 'month':
         diagram_values = _get_diagram_values(date)
@@ -26,10 +28,12 @@ def save_diagram(date='year') -> str or None:
 
 
 def delete_diagram():
+    """Удаляет диаграмму по ее имени"""
     remove(diagram_name)
 
 
 def _get_diagram_values(date='year') -> Dict:
+    """Возвращает данные для диаграммы"""
     if date == 'month':
         rows = db.fetchall("expense", "cash category".split(),
                            f"where expense.created like '%{gf.get_month_and_year()}'")

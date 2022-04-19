@@ -3,7 +3,7 @@ from aiogram.utils.callback_data import CallbackData
 from typing import Dict
 
 import db
-import general_functions as gf
+import datetime_functions as gf
 
 inline_btn_month = InlineKeyboardButton('Показать расходы по дням', callback_data='month_expenses')
 inline_kb_month = InlineKeyboardMarkup().add(inline_btn_month)
@@ -12,6 +12,7 @@ callback_data_diagram = CallbackData('prefix', 'chat_id', 'filter')
 
 
 def get_diagram_keyboard(chart_id):
+    """Возвращает inline кнопки для диаграммы"""
     inline_btn_diagram_month = InlineKeyboardButton(text='Диаграмма за месяц',
             callback_data=callback_data_diagram.new(chat_id=chart_id, filter='diagram_month'))
     inline_btn_diagram_year = InlineKeyboardButton(text='Диаграмма за год',

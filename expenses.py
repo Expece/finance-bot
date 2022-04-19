@@ -1,27 +1,29 @@
 import re
 from functools import reduce
-from typing import NamedTuple, List, Optional
+from typing import NamedTuple, List, Optional, Match
 from aiogram.utils.emoji import emojize
 
 import db
 from exceptions import UncorrectMessage
 from categories import Categories
-import general_functions as gf
+import datetime_functions as gf
 
 
 class Message(NamedTuple):
+    """Структура сообщения"""
     cash: int
     category: str
 
 
 class Expense(NamedTuple):
+    """Структура расхода"""
     ex_id: Optional[int]
     cash: int
     category: str
 
 
 def add_expense(raw_message: str) -> Expense:
-    """Добавляет расход в дб"""
+    """Добавляет расход в бд"""
     parsed_message = _parse_message(raw_message)
     category = Categories().get_category(parsed_message.category)
     inserted_row_id = db.insert("expense", {
@@ -68,7 +70,7 @@ def delete_expense(row_id: int) -> None:
     db.delete("expense", row_id)
 
 
-def set_daily_expense(message: str) -> str:
+def set_daily_limit(message: str) -> str:
     """Устанавливается базовый расход в день"""
     parsed_message = _parse_message(message, 1)
     cursor = db.get_cursor()
@@ -83,8 +85,8 @@ def set_daily_expense(message: str) -> str:
     return answer_message
 
 
-def calculate_avalible_expenses():
-    """Расчет разрешенных трат"""
+def calculate_avalible_expenses() -> str:
+    """Расчитывает сумму, которую можно сегодня потратить и не превысить дневной лимит"""
     rows = db.fetchall("budget", ["daily_limit"])
     daily_limit = rows[0].get('daily_limit')
     if not daily_limit:
@@ -105,6 +107,7 @@ def _avalible_expenses_message(avalible_cash: int) -> str:
 
 
 def _get_day_expenses() -> List[Expense]:
+    """Возвращает расходы за день"""
     rows = db.fetchall("expense", "id cash category".split(),
                        f"where expense.created == '{gf.get_formated_now()}'")
     day_expenses = [Expense(ex_id=row.get('id'), cash=row.get('cash'),
@@ -113,6 +116,7 @@ def _get_day_expenses() -> List[Expense]:
 
 
 def _get_month_expenses_cash() -> int:
+    """Возвращает сумму расходов за месяц"""
     result = 0
     rows = db.fetchall("expense", ["cash"],
                        f"where expense.created like '%{gf.get_month_and_year()}'")
@@ -123,6 +127,7 @@ def _get_month_expenses_cash() -> int:
 
 
 def _parse_message(raw_message: str, type_message=0) -> Message:
+    """Парсит сообщение"""
     regex_result = _regular_result(raw_message, type_message)
     if not regex_result or not regex_result.group(0) or not regex_result.group(1) \
             or not regex_result.group(2):
@@ -137,7 +142,8 @@ def _parse_message(raw_message: str, type_message=0) -> Message:
     return Message(cash=cash, category=category)
 
 
-def _regular_result(raw_message: str, type_message):
+def _regular_result(raw_message: str, type_message) -> Match[str]:
+    """Возвращает результат регулярного выражения"""
     regex_result = re.match(r"([\d ]+) (.*)", raw_message)
     if type_message:
         regex_result = re.search(r"(/daily) (\d+$)", raw_message)

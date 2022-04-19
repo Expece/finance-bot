@@ -41,6 +41,7 @@ class Categories:
         return self._categories
 
     def get_category(self, category_name: str) -> Category:
+        """Возвращает категорию по ее псевдониму"""
         other_category = None
         for category in self._categories:
             if category.name == 'прочее':

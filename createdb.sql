@@ -1,16 +1,20 @@
+-- Создается таблица для дневного лимита
 create table budget(
     id integer PRIMARY KEY,
     daily_limit integer
 );
 
+-- Добавляется дневной лимит по умоланию
 insert into budget(id, daily_limit) values(1, 0);
 
+-- Создается таблица для категорий
 create table category(
     name varchar(255) PRIMARY KEY,
     emoji varchar(255),
     aliases text
 );
 
+-- Создается таблица для расходов
 create table expense(
     id integer PRIMARY KEY,
     cash integer,
@@ -19,6 +23,7 @@ create table expense(
     raw_text text
 );
 
+-- Добавляются категории,псевдонимы и эмодзи в таблицу категорий
 insert into category(name, emoji, aliases)
     values
     ("продукты", ":green_apple:", "еда, products"),
