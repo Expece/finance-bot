@@ -1,12 +1,14 @@
 from typing import Dict
 import matplotlib.pyplot as plt
 from os import remove
-from datetime import datetime
 
 import db
+import general_functions as gf
+
+diagram_name = 'diagram.png'
 
 
-def save_diagram(date='year'):
+def save_diagram(date='year') -> str or None:
     diagram_values = _get_diagram_values()
     if date == 'month':
         diagram_values = _get_diagram_values(date)
@@ -17,23 +19,23 @@ def save_diagram(date='year'):
     ax.pie(categories_cash, autopct='%1.1f%%')
     ax.legend(categories_labels, bbox_to_anchor=(0.92, 0.7), facecolor='w', framealpha=0.8,
               edgecolor='b', fontsize=12, title='Category', title_fontsize=15)
-    plt.savefig('diagram.png', facecolor='black')
+    plt.savefig(diagram_name, facecolor='black')
     if categories_labels:
-        return 'diagram.png'
+        return diagram_name
     return None
 
 
 def delete_diagram():
-    remove('diagram.png')
+    remove(diagram_name)
 
 
 def _get_diagram_values(date='year') -> Dict:
     if date == 'month':
         rows = db.fetchall("expense", "cash category".split(),
-                           f"where expense.created like '%{_get_year_and_month()}'")
+                           f"where expense.created like '%{gf.get_month_and_year()}'")
     else:
         rows = db.fetchall("expense", "cash category".split(),
-                           f"where expense.created like '%{_get_year()}'")
+                           f"where expense.created like '%{gf.get_year()}'")
     result = {}
     for row in rows:
         category = row.get('category', 0)
@@ -42,13 +44,3 @@ def _get_diagram_values(date='year') -> Dict:
             continue
         result[category] = row['cash']
     return result
-
-
-def _get_year() -> str:
-    time = datetime.now()
-    return time.strftime("%Y")[2:]
-
-
-def _get_year_and_month() -> str:
-    time = datetime.now()
-    return time.strftime("%m-%Y")

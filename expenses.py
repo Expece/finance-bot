@@ -1,5 +1,4 @@
 import re
-import datetime
 from functools import reduce
 from typing import NamedTuple, List, Optional
 from aiogram.utils.emoji import emojize
@@ -7,6 +6,7 @@ from aiogram.utils.emoji import emojize
 import db
 from exceptions import UncorrectMessage
 from categories import Categories
+import general_functions as gf
 
 
 class Message(NamedTuple):
@@ -27,7 +27,7 @@ def add_expense(raw_message: str) -> Expense:
     inserted_row_id = db.insert("expense", {
         "cash": parsed_message.cash,
         "category": category.name,
-        "created": _get_formated_now(),
+        "created": gf.get_formated_now(),
         "raw_text": raw_message
     })
     return Expense(ex_id=None, cash=parsed_message.cash, category=category.name)
@@ -55,19 +55,16 @@ def get_day_statistics() -> str:
 
 def last() -> List[Expense]:
     """Возвращает последние несколько расходов"""
-    cursor = db.get_cursor()
-    cursor.execute(
-        "select e.id, e.cash, c.name "
-        "from expense e left join category c "
-        "on c.name=e.category "
-        "order by id desc limit 5")
-    rows = cursor.fetchall()
-    last_expenses = [Expense(ex_id=row[0], cash=row[1], category=row[2]) for row in rows]
+    rows = db.fetchall("expense e left join category c on c.name=e.category ",
+                       "e.id e.cash c.name".split(),
+                       "order by id desc limit 5")
+    last_expenses = [Expense(ex_id=row.get('e.id'), cash=row.get('e.cash'),
+                             category=row.get('c.name')) for row in rows]
     return last_expenses
 
 
 def delete_expense(row_id: int) -> None:
-    """Удаляет сообщение по его идентификатору"""
+    """Удаляет расход по его идентификатору"""
     db.delete("expense", row_id)
 
 
@@ -108,42 +105,21 @@ def _avalible_expenses_message(avalible_cash: int) -> str:
 
 
 def _get_day_expenses() -> List[Expense]:
-    time = _get_formated_now()
-    cursor = db.get_cursor()
-    cursor.execute(
-        "select e.id, e.cash, e.category "
-        f"from expense e where e.created == '{time}'")
-    rows = cursor.fetchall()
-    day_expenses = [Expense(ex_id=row[0], cash=row[1], category=row[2]) for row in rows]
+    rows = db.fetchall("expense", "id cash category".split(),
+                       f"where expense.created == '{gf.get_formated_now()}'")
+    day_expenses = [Expense(ex_id=row.get('id'), cash=row.get('cash'),
+                            category=row.get('category')) for row in rows]
     return day_expenses
 
 
 def _get_month_expenses_cash() -> int:
     result = 0
-    month_and_year = _get_year_and_month()
-    cursor = db.get_cursor()
-    cursor.execute(
-        "select e.cash from expense e "
-        f"where e.created like '%-{month_and_year}'")
-    rows = cursor.fetchall()
+    rows = db.fetchall("expense", ["cash"],
+                       f"where expense.created like '%{gf.get_month_and_year()}'")
     if not rows:
         return result
-    result = reduce(lambda x, y: x + y, [row[0] for row in rows])
+    result = reduce(lambda x, y: x + y, [row.get('cash') for row in rows])
     return result
-
-
-def _get_year_and_month(time='') -> str:
-    if not time:
-        time = _get_formated_now()
-    splited_time = time.split('-')
-    year_and_month = "-".join(splited_time[1:])
-    return year_and_month
-
-
-def _get_formated_now() -> str:
-    """Возвращает сегодняшнюю дату в виде D-M-Y"""
-    now = datetime.datetime.now()
-    return now.strftime("%d-%m-%Y")
 
 
 def _parse_message(raw_message: str, type_message=0) -> Message:

@@ -3,7 +3,7 @@ from aiogram.utils.callback_data import CallbackData
 from typing import Dict
 
 import db
-from datetime import datetime
+import general_functions as gf
 
 inline_btn_month = InlineKeyboardButton('Показать расходы по дням', callback_data='month_expenses')
 inline_kb_month = InlineKeyboardMarkup().add(inline_btn_month)
@@ -32,7 +32,7 @@ def month_btn_data() -> str:
 def _get_daily_expenses() -> Dict:
     """Парсит expenses из дб"""
     rows = db.fetchall("expense", "cash created".split(),
-                       f"where expense.created like '%{_get_year_and_month()}'")
+                       f"where expense.created like '%{gf.get_month_and_year()}'")
     result = {}
     for row in rows:
         created = row.get('created')
@@ -42,8 +42,3 @@ def _get_daily_expenses() -> Dict:
             continue
         result[created] = cash
     return result
-
-
-def _get_year_and_month() -> str:
-    time = datetime.now()
-    return time.strftime("%m-%Y")
