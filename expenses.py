@@ -75,10 +75,7 @@ def delete_expense(row_id: int, user_id) -> None:
 def set_daily_limit(message: str, user_id) -> str:
     """Устанавливается базовый расход в день"""
     parsed_message = _parse_message(message, 1)
-    cursor = BotDB().get_cursor()
-    cursor.execute(
-        f"UPDATE budget SET daily_limit = {parsed_message.cash} "
-        f"WHERE budget.id == 1 AND user_id = {user_id}")
+    BotDB().update_daily_limit(user_id, parsed_message.cash)
     answer_message = f"Усановил, дневной расход -- {parsed_message.cash}₽. "
     if int(parsed_message.cash) >= 500:
         return answer_message + emojize(f'Немало :new_moon_with_face:')
@@ -89,10 +86,10 @@ def set_daily_limit(message: str, user_id) -> str:
 
 def calculate_avalible_expenses(user_id) -> str:
     """Расчитывает сумму, которую можно сегодня потратить и не превысить дневной лимит"""
-    rows = BotDB().fetchall("budget", ["daily_limit"], user_id)
-    if not rows:
+    row = BotDB().fetchall("budget", ["daily_limit"], user_id)
+    if not row:
         return ''
-    daily_limit = rows[0].get('daily_limit')
+    daily_limit = row[0].get('daily_limit')
     day_expenses = _get_day_expenses(user_id)
     spent_cash = reduce(lambda x, y: x + y, [expence.cash for expence in day_expenses])
     avalible_cash = int(daily_limit - spent_cash)

@@ -1,12 +1,8 @@
 -- Создается таблица для дневного лимита
 create table budget(
-    id integer PRIMARY KEY,
-    user_id integer,
+    user_id PRIMARY KEY,
     daily_limit integer
 );
-
--- Добавляется дневной лимит по умоланию
-insert into budget(id, daily_limit) values(1, 0);
 
 -- Создается таблица для категорий
 create table category(

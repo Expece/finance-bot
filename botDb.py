@@ -38,6 +38,16 @@ class BotDB:
         )
         return self.conn.commit()
 
+    def update_daily_limit(self, user_id: int, new_value: int):
+        """Добьавляет данные в бд"""
+        if not self.fetchall('budget', ['daily_limit'], user_id):
+            self.insert('budget', {'user_id': self.get_user_id(user_id), 'daily_limit': new_value})
+        else:
+            self.cursor.execute(
+                f"UPDATE budget SET daily_limit = {new_value} WHERE user_id = {self.get_user_id(user_id)}"
+            )
+        return self.conn.commit()
+
     def fetchall(self, table: str, columns: List[str], user_id='', where='') -> List[Dict]:
         """Возвращает данные из бд"""
         columns_joined = ", ".join(columns)
@@ -58,12 +68,15 @@ class BotDB:
     def delete(self, table: str, row_id: int, user_id) -> None:
         """Удаляет строку из бд"""
         row_id = int(row_id)
-        self.cursor.execute(f"delete from {table} where id={row_id} AND user_id={user_id}")
+        self.cursor.execute(f"delete from {table} where id={row_id} AND user_id= ?", (self.get_user_id(user_id),))
         self.conn.commit()
 
     def get_cursor(self):
         """Возвращает курсор"""
         return self.cursor
+
+    def commit(self):
+        self.conn.commit()
 
     def close(self):
         """Закрываем соединение с БД"""
