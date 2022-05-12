@@ -59,9 +59,9 @@ def get_day_statistics(user_id) -> str:
 def last(user_id) -> List[Expense]:
     """Возвращает последние несколько расходов"""
     rows = BotDB().fetchall("expense e left join category c on c.name=e.category ",
-                          "e.id e.cash c.name".split(),
-                          user_id,
-                          "order by id desc limit 5")
+                            "e.id e.cash c.name".split(),
+                            user_id,
+                            "order by id desc limit 5")
     last_expenses = [Expense(ex_id=row.get('e.id'), cash=row.get('e.cash'),
                              category=row.get('c.name')) for row in rows]
     return last_expenses
@@ -118,8 +118,8 @@ def _get_month_expenses_cash(user_id) -> int:
     """Возвращает сумму расходов за месяц"""
     result = 0
     rows = BotDB().fetchall("expense", ["cash"],
-                          user_id,
-                          f"AND expense.created like '%{gf.get_month_and_year()}'")
+                            user_id,
+                            f"AND expense.created like '%{gf.get_month_and_year()}'")
     if not rows:
         return result
     result = reduce(lambda x, y: x + y, [row.get('cash') for row in rows])

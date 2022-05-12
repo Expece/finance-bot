@@ -75,9 +75,6 @@ class BotDB:
         """Возвращает курсор"""
         return self.cursor
 
-    def commit(self):
-        self.conn.commit()
-
     def close(self):
         """Закрываем соединение с БД"""
         self.conn.close()
