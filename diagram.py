@@ -2,18 +2,18 @@ from typing import Dict
 import matplotlib.pyplot as plt
 from os import remove
 
-import db
+from botDb import BotDB
 import datetime_functions as gf
 
-# Название диаграммы, оно не меняется
+# Название диаграммы, не изменяется
 diagram_name = 'diagram.png'
 
 
-def save_diagram(date='year') -> str or None:
+def save_diagram(user_id, date='year') -> str or None:
     """Сохраняет диаграмму в png и возвращает ее название"""
-    diagram_values = _get_diagram_values()
+    diagram_values = _get_diagram_values(user_id)
     if date == 'month':
-        diagram_values = _get_diagram_values(date)
+        diagram_values = _get_diagram_values(user_id, date)
     categories_cash = [value for value in diagram_values.values()]
     categories_labels = [key for key in diagram_values.keys()]
 
@@ -32,14 +32,16 @@ def delete_diagram():
     remove(diagram_name)
 
 
-def _get_diagram_values(date='year') -> Dict:
+def _get_diagram_values(user_id, date='year') -> Dict:
     """Возвращает данные для диаграммы"""
     if date == 'month':
-        rows = db.fetchall("expense", "cash category".split(),
-                           f"where expense.created like '%{gf.get_month_and_year()}'")
+        rows = BotDB().fetchall("expense", "cash category".split(),
+                              user_id,
+                              f"AND expense.created like '%{gf.get_month_and_year()}'")
     else:
-        rows = db.fetchall("expense", "cash category".split(),
-                           f"where expense.created like '%{gf.get_year()}'")
+        rows = BotDB().fetchall("expense", "cash category".split(),
+                              user_id,
+                              f"AND expense.created like '%{gf.get_year()}'")
     result = {}
     for row in rows:
         category = row.get('category', 0)

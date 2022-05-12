@@ -9,6 +9,8 @@ import diagram
 import keyboards as kb
 from categories import Categories
 from config import BOT_TOKEN
+from botDb import BotDB
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +20,15 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
 
-@dp.message_handler(commands=['start', 'help'])
+@dp.message_handler(commands=['start'])
+async def show_today_expenses(message: types.Message):
+    """Выводит внесенные расходы за день"""
+    if not BotDB().user_exists(message.from_user.id):
+        BotDB().add_user(message.from_user.id)
+    await send_welcome(message)
+
+
+@dp.message_handler(commands=['help'])
 async def send_welcome(message: types.Message):
     """This handler will be called when user sends `/start` or `/help` command"""
     await message.answer(text(
@@ -35,14 +45,14 @@ async def send_welcome(message: types.Message):
 @dp.message_handler(commands=['today'])
 async def show_today_expenses(message: types.Message):
     """Выводит внесенные расходы за день"""
-    answer_message = expenses.get_day_statistics()
+    answer_message = expenses.get_day_statistics(message.from_user.id)
     await message.answer(answer_message)
 
 
 @dp.message_handler(commands=['month'])
 async def show_month_expenses(message: types.Message):
     """Выводит внесенные расходы за месяц"""
-    month_statistics = expenses.get_month_statistics()
+    month_statistics = expenses.get_month_statistics(message.from_user.id)
     if not month_statistics:
         answer_message = "В этом месяце нет расходов"
         await message.answer(answer_message)
@@ -54,7 +64,7 @@ async def show_month_expenses(message: types.Message):
 @dp.message_handler(commands=['last'])
 async def list_expenses(message: types.Message):
     """Отправляет последние несколько записей о расходах"""
-    last_expenses = expenses.last()
+    last_expenses = expenses.last(message.from_user.id)
     if not last_expenses:
         await message.answer("Расходы ещё не заведены")
         return
@@ -71,7 +81,7 @@ async def list_expenses(message: types.Message):
 async def daily_expense(message: types.Message):
     """Устанавливает базовый расход в день и выводит сообщение"""
     try:
-        answer_message = expenses.set_daily_limit(message.text)
+        answer_message = expenses.set_daily_limit(message.text, message.from_user.id)
     except exceptions.UncorrectMessage as e:
         await message.reply(f'{str(e)}, напиши типо: /daily 500')
         return
@@ -81,7 +91,7 @@ async def daily_expense(message: types.Message):
 @dp.message_handler(commands=['diagram'])
 async def show_diagram(message: types.Message):
     """Рисует диаграмму расходов"""
-    diagram_name = diagram.save_diagram()
+    diagram_name = diagram.save_diagram(message.from_user.id)
     if diagram_name:
         reply_markup = kb.get_diagram_keyboard(message.chat.id)
         await message.answer("Diagram", reply_markup=reply_markup)
@@ -107,7 +117,7 @@ async def del_expense(message: types.Message):
     except ValueError:
         await message.reply(emojize('Не понял :face_with_raised_eyebrow:'))
         return
-    expenses.delete_expense(row_id)
+    expenses.delete_expense(row_id, message.from_user.id)
     answer_message = "Удалил"
     await message.answer(answer_message)
 
@@ -116,12 +126,12 @@ async def del_expense(message: types.Message):
 async def add_expense(message: types.Message):
     """Добавляет расход"""
     try:
-        expense = expenses.add_expense(message.text)
+        expense = expenses.add_expense(message.text, message.from_user.id)
     except exceptions.UncorrectMessage as e:
         await message.reply(str(e)+', напиши типо: 100 такси')
         return
     answer_message = emojize(f"Добавил траты: {expense.cash}₽ на {expense.category}:white_check_mark:\n") +\
-        expenses.calculate_avalible_expenses()
+        expenses.calculate_avalible_expenses(message.from_user.id)
     await message.answer(answer_message, parse_mode=types.ParseMode.MARKDOWN)
 
 
@@ -136,7 +146,7 @@ async def unknown_message(msg: types.Message):
 @dp.callback_query_handler(text="month_expenses")
 async def send_month_expenses(call: types.CallbackQuery):
     """Выводит суммы расходов по дням"""
-    await call.message.answer(kb.month_btn_data())
+    await call.message.answer(kb.month_btn_data(call.from_user.id))
     await call.answer()
 
 
@@ -144,7 +154,7 @@ async def send_month_expenses(call: types.CallbackQuery):
 async def send_diagram_month(call: types.CallbackQuery, callback_data: dict):
     """Отправляет диаграмму о расходах за месяц"""
     chat_id = callback_data['chat_id']
-    diagram_name = diagram.save_diagram('month')
+    diagram_name = diagram.save_diagram(call.from_user.id, 'month')
     await bot.send_photo(chat_id=chat_id, photo=open(diagram_name, 'rb'),
                          caption='Диаграмма за месяц')
     await call.answer()
@@ -155,7 +165,7 @@ async def send_diagram_month(call: types.CallbackQuery, callback_data: dict):
 async def send_diagram_year(call: types.CallbackQuery, callback_data: dict):
     """Отправляет диаграмму о расходах за год"""
     chat_id = callback_data['chat_id']
-    diagram_name = diagram.save_diagram('year')
+    diagram_name = diagram.save_diagram(call.from_user.id, 'year')
     await bot.send_photo(chat_id=chat_id, photo=open(diagram_name, 'rb'),
                          caption='Диаграмма за год')
     await call.answer()

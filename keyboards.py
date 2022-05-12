@@ -2,7 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 from typing import Dict
 
-import db
+from botDb import BotDB
 import datetime_functions as gf
 
 inline_btn_month = InlineKeyboardButton('Показать расходы по дням', callback_data='month_expenses')
@@ -21,19 +21,20 @@ def get_diagram_keyboard(chart_id):
     return inline_kb_diagram
 
 
-def month_btn_data() -> str:
+def month_btn_data(user_id) -> str:
     """Возвращает строку с дневными расходами за месяц"""
-    daily_expenses = _get_daily_expenses()
+    daily_expenses = _get_daily_expenses(user_id)
     result = ''
     for day in daily_expenses:
         result += f'{day} - {daily_expenses.get(day)}\n'
     return result
 
 
-def _get_daily_expenses() -> Dict:
+def _get_daily_expenses(user_id) -> Dict:
     """Парсит expenses из дб"""
-    rows = db.fetchall("expense", "cash created".split(),
-                       f"where expense.created like '%{gf.get_month_and_year()}'")
+    rows = BotDB().fetchall("expense", "cash created".split(),
+                            user_id,
+                            f"AND expense.created like '%{gf.get_month_and_year()}'")
     result = {}
     for row in rows:
         created = row.get('created')

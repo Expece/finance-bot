@@ -1,5 +1,5 @@
 from typing import NamedTuple, List, Dict
-import db
+from botDb import BotDB
 
 
 class Category(NamedTuple):
@@ -15,7 +15,7 @@ class Categories:
 
     def _load_categories(self) -> List[Category]:
         """Возвращает справочник категорий расходов"""
-        categories = db.fetchall(
+        categories = BotDB().fetchall(
             "category", "name emoji aliases".split()
         )
         categories = self._fill_aliases(categories)

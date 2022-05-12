@@ -3,7 +3,7 @@ from functools import reduce
 from typing import NamedTuple, List, Optional, Match
 from aiogram.utils.emoji import emojize
 
-import db
+from botDb import BotDB
 from exceptions import UncorrectMessage
 from categories import Categories
 import datetime_functions as gf
@@ -22,11 +22,12 @@ class Expense(NamedTuple):
     category: str
 
 
-def add_expense(raw_message: str) -> Expense:
+def add_expense(raw_message: str, user_id) -> Expense:
     """Добавляет расход в бд"""
     parsed_message = _parse_message(raw_message)
     category = Categories().get_category(parsed_message.category)
-    inserted_row_id = db.insert("expense", {
+    inserted_row_id = BotDB().insert("expense", {
+        "user_id": BotDB().get_user_id(user_id),
         "cash": parsed_message.cash,
         "category": category.name,
         "created": gf.get_formated_now(),
@@ -35,15 +36,15 @@ def add_expense(raw_message: str) -> Expense:
     return Expense(ex_id=None, cash=parsed_message.cash, category=category.name)
 
 
-def get_month_statistics() -> int:
+def get_month_statistics(user_id) -> int:
     """Возвращает статистику за месяц"""
-    all_cash = _get_month_expenses_cash()
+    all_cash = _get_month_expenses_cash(user_id)
     return all_cash
 
 
-def get_day_statistics() -> str:
+def get_day_statistics(user_id) -> str:
     """Возвращает статистику за день"""
-    day_expenses = _get_day_expenses()
+    day_expenses = _get_day_expenses(user_id)
     if not day_expenses:
         return "Сегодня расходов нет"
     all_cash = 0
@@ -55,28 +56,29 @@ def get_day_statistics() -> str:
             f"\nВсего - {all_cash}₽")
 
 
-def last() -> List[Expense]:
+def last(user_id) -> List[Expense]:
     """Возвращает последние несколько расходов"""
-    rows = db.fetchall("expense e left join category c on c.name=e.category ",
-                       "e.id e.cash c.name".split(),
-                       "order by id desc limit 5")
+    rows = BotDB().fetchall("expense e left join category c on c.name=e.category ",
+                          "e.id e.cash c.name".split(),
+                          user_id,
+                          "order by id desc limit 5")
     last_expenses = [Expense(ex_id=row.get('e.id'), cash=row.get('e.cash'),
                              category=row.get('c.name')) for row in rows]
     return last_expenses
 
 
-def delete_expense(row_id: int) -> None:
+def delete_expense(row_id: int, user_id) -> None:
     """Удаляет расход по его идентификатору"""
-    db.delete("expense", row_id)
+    BotDB().delete("expense", row_id, user_id)
 
 
-def set_daily_limit(message: str) -> str:
+def set_daily_limit(message: str, user_id) -> str:
     """Устанавливается базовый расход в день"""
     parsed_message = _parse_message(message, 1)
-    cursor = db.get_cursor()
+    cursor = BotDB().get_cursor()
     cursor.execute(
         f"UPDATE budget SET daily_limit = {parsed_message.cash} "
-        "WHERE budget.id == 1")
+        f"WHERE budget.id == 1 AND user_id = {user_id}")
     answer_message = f"Усановил, дневной расход -- {parsed_message.cash}₽. "
     if int(parsed_message.cash) >= 500:
         return answer_message + emojize(f'Немало :new_moon_with_face:')
@@ -85,13 +87,13 @@ def set_daily_limit(message: str) -> str:
     return answer_message
 
 
-def calculate_avalible_expenses() -> str:
+def calculate_avalible_expenses(user_id) -> str:
     """Расчитывает сумму, которую можно сегодня потратить и не превысить дневной лимит"""
-    rows = db.fetchall("budget", ["daily_limit"])
-    daily_limit = rows[0].get('daily_limit')
-    if not daily_limit:
+    rows = BotDB().fetchall("budget", ["daily_limit"], user_id)
+    if not rows:
         return ''
-    day_expenses = _get_day_expenses()
+    daily_limit = rows[0].get('daily_limit')
+    day_expenses = _get_day_expenses(user_id)
     spent_cash = reduce(lambda x, y: x + y, [expence.cash for expence in day_expenses])
     avalible_cash = int(daily_limit - spent_cash)
     return _avalible_expenses_message(avalible_cash)
@@ -106,20 +108,21 @@ def _avalible_expenses_message(avalible_cash: int) -> str:
     return f'Вам доступно еще {avalible_cash}₽'
 
 
-def _get_day_expenses() -> List[Expense]:
+def _get_day_expenses(user_id) -> List[Expense]:
     """Возвращает расходы за день"""
-    rows = db.fetchall("expense", "id cash category".split(),
-                       f"where expense.created == '{gf.get_formated_now()}'")
+    rows = BotDB().fetchall("expense", "id cash category".split(), user_id,
+                            f"AND expense.created = '{gf.get_formated_now()}'")
     day_expenses = [Expense(ex_id=row.get('id'), cash=row.get('cash'),
                             category=row.get('category')) for row in rows]
     return day_expenses
 
 
-def _get_month_expenses_cash() -> int:
+def _get_month_expenses_cash(user_id) -> int:
     """Возвращает сумму расходов за месяц"""
     result = 0
-    rows = db.fetchall("expense", ["cash"],
-                       f"where expense.created like '%{gf.get_month_and_year()}'")
+    rows = BotDB().fetchall("expense", ["cash"],
+                          user_id,
+                          f"AND expense.created like '%{gf.get_month_and_year()}'")
     if not rows:
         return result
     result = reduce(lambda x, y: x + y, [row.get('cash') for row in rows])

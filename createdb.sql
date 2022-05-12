@@ -1,6 +1,7 @@
 -- Создается таблица для дневного лимита
 create table budget(
     id integer PRIMARY KEY,
+    user_id integer,
     daily_limit integer
 );
 
@@ -14,9 +15,16 @@ create table category(
     aliases text
 );
 
+-- Создается таблица для пользователей
+create table users(
+    id integer PRIMARY KEY,
+    user_id integer
+);
+
 -- Создается таблица для расходов
 create table expense(
     id integer PRIMARY KEY,
+    user_id integer,
     cash integer,
     category varchar(255),
     created datetime,

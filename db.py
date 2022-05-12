@@ -20,7 +20,7 @@ def insert(table: str, column_values: Dict):
 
 
 def fetchall(table: str, columns: List[str], where='') -> List[Dict]:
-    """Возвращает данные в бд"""
+    """Возвращает данные из бд"""
     columns_joined = ", ".join(columns)
     cursor.execute(f"SELECT {columns_joined} FROM {table} " + where)
     rows = cursor.fetchall()
